@@ -15,6 +15,14 @@ if not exist "%PY%" (
 )
 
 echo ============================================
+echo  0/2  同步网页版到 docs\index.html
+echo ============================================
+rem docs\index.html 是 GitHub Pages 的入口，内容必须与 图章重构\图章生成器.html 完全一致
+copy /Y "图章重构\图章生成器.html" "docs\index.html"
+if errorlevel 1 goto fail
+
+echo.
+echo ============================================
 echo  1/2  目录版（推荐，启动约 1 秒）
 echo ============================================
 "%PY%" -m PyInstaller --noconfirm --clean --onedir --windowed ^

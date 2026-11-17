@@ -4,6 +4,7 @@
   <p><b>一套参数模型，两种实现。</b><br>
   单文件网页版（Canvas 2D）· Python 桌面版（Pillow + customtkinter）<br>
   参数 JSON 双向互通，同一份参数在两端渲染结果一致。</p>
+  <p><a href="https://longteng-H.github.io/SealMaker/"><b>▶ 在线试用（浏览器直接打开，无需安装）</b></a></p>
 </div>
 
 > ⚠️ **仅限合法用途。** 本项目用于自制印章效果图、票据与文档排版、设计稿演示、逆向工程学习。
@@ -52,7 +53,8 @@
 
 **方式一：下载 exe** —— 见 [Releases](https://github.com/longteng-H/SealMaker/releases)。目录版启动约 1.8 秒；单文件版 34 MB，启动约 5.5 秒（每次都要解压）。整目录拷走即可用，不需要装 Python。
 
-**方式二：网页版** —— 双击 `图章重构/图章生成器.html`。单文件、纯本地、不联网。
+**方式二：网页版** —— 直接打开 <https://longteng-H.github.io/SealMaker/>，浏览器里就能用，不装任何东西。
+单文件、纯本地运算，参数和图片都不上传服务器。想离线用就双击 `图章重构/图章生成器.html`，是同一份代码。
 
 **方式三：源码运行**
 
@@ -105,6 +107,7 @@ python "图章重构/图章生成器.py"
   参数模型约定.md            两端唯一的契约文档
   纹理/                     外部纹理放这里（PNG/JPG/WEBP）
 docs/img/                   README 用图
+docs/index.html             网页版的发布副本（GitHub Pages 入口，由 打包.cmd 同步）
 打包说明.md                  打包成 exe 的完整命令与踩坑记录
 打包.cmd                    双击一键打两版 exe
 ```

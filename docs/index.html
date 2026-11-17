@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>图章生成器 · Web 版</title>
+<style>
+  :root{
+    --bg:#f5f5f3; --panel:#ffffff; --line:#e3e2de; --line2:#d3d1c7;
+    --txt:#2c2c2a; --txt2:#6b6a64; --accent:#b32b1c; --accent2:#8f2317;
+    --field:#fbfbfa;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--txt);
+    font:13px/1.55 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  header{
+    display:flex; align-items:center; gap:12px; padding:10px 18px;
+    background:var(--panel); border-bottom:1px solid var(--line); flex:0 0 auto;
+  }
+  header h1{font-size:14px; font-weight:600; margin:0; letter-spacing:.3px}
+  header .sub{font-size:12px; color:var(--txt2)}
+  header .grow{flex:1}
+  button{
+    font:inherit; font-size:12px; padding:6px 12px; border-radius:7px; cursor:pointer;
+    border:1px solid var(--line2); background:#fff; color:var(--txt);
+    transition:background .12s,border-color .12s;
+  }
+  button:hover{background:#f2f1ee; border-color:#bdbab0}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  button.primary:hover{background:var(--accent2); border-color:var(--accent2)}
+  main{flex:1; display:flex; min-height:0}
+  aside{
+    width:340px; flex:0 0 340px; background:var(--panel); border-right:1px solid var(--line);
+    overflow-y:auto; padding:6px 0 40px;
+  }
+  aside::-webkit-scrollbar{width:9px}
+  aside::-webkit-scrollbar-thumb{background:#d6d4cd; border-radius:9px}
+  section#stage{
+    flex:1; display:flex; align-items:center; justify-content:center; padding:24px;
+    min-width:0; overflow:auto;
+  }
+  canvas{background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.10), 0 8px 24px rgba(0,0,0,.05); border-radius:2px}
+  details{border-bottom:1px solid var(--line)}
+  details>summary{
+    list-style:none; cursor:pointer; padding:11px 18px; font-weight:600; font-size:12.5px;
+    display:flex; align-items:center; gap:8px; color:var(--txt); user-select:none;
+  }
+  details>summary::-webkit-details-marker{display:none}
+  details>summary::before{
+    content:""; width:0; height:0; border-left:5px solid var(--txt2);
+    border-top:4px solid transparent; border-bottom:4px solid transparent;
+    transition:transform .15s;
+  }
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:#faf9f7}
+  .body{padding:2px 18px 14px}
+  .row{display:flex; align-items:center; gap:8px; min-height:28px; margin:4px 0}
+  .row.off{opacity:.42}
+  .row.off *{pointer-events:none}
+  input:disabled{background:#f4f3f0; color:#a8a49a; cursor:not-allowed}
+  .row>label{flex:0 0 74px; color:var(--txt2); font-size:12px}
+  .ctl{flex:1; display:flex; align-items:center; gap:5px; min-width:0; overflow:hidden}
+  .unit{color:var(--txt2); font-size:11px; flex:0 0 auto}
+  input[type=number],input[type=text],select{
+    width:100%; min-width:0; font:inherit; font-size:12px; padding:4px 6px;
+    border:1px solid var(--line2); border-radius:6px; background:var(--field); color:var(--txt);
+    outline:none;
+  }
+  input[type=number]{width:50px; flex:0 0 50px; text-align:right; padding:4px 4px}
+  input:focus,select:focus{border-color:var(--accent); background:#fff}
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; height:3px; border-radius:3px;
+    background:#ddd9d0; flex:1 1 40px; min-width:28px; outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:13px; height:13px; border-radius:50%;
+    background:var(--accent); border:2px solid #fff; box-shadow:0 0 0 1px var(--line2); cursor:pointer;
+  }
+  input[type=color]{
+    -webkit-appearance:none; appearance:none; width:34px; height:24px; padding:0;
+    border:1px solid var(--line2); border-radius:6px; background:#fff; cursor:pointer;
+  }
+  input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+  input[type=color]::-webkit-color-swatch{border:none; border-radius:4px}
+  input[type=checkbox]{accent-color:var(--accent); width:14px; height:14px; cursor:pointer}
+  .swatches{display:flex; gap:5px; margin-left:auto}
+  .sw{width:16px; height:16px; border-radius:4px; border:1px solid rgba(0,0,0,.12); cursor:pointer}
+  .hint{font-size:11.5px; color:#8a8880; padding:2px 0 6px; line-height:1.5}
+  .chk{display:flex; align-items:center; gap:7px; cursor:pointer; color:var(--txt2); font-size:12px}
+  .chk input{margin:0}
+  .seg{display:flex; border:1px solid var(--line2); border-radius:6px; overflow:hidden; width:100%}
+  .seg button{
+    flex:1; border:0; border-radius:0; padding:5px 0; font-size:12px; background:#fff; color:var(--txt2);
+  }
+  .seg button.on{background:var(--accent); color:#fff}
+  .seg button+button{border-left:1px solid var(--line2)}
+  .preset{display:flex; gap:5px; width:100%}
+  .preset button{
+    flex:1; min-width:0; font:inherit; font-size:11px; padding:4px 0; cursor:pointer;
+    border:1px solid var(--line2); border-radius:5px; background:var(--field); color:var(--txt2);
+  }
+  .preset button:hover{border-color:var(--accent); color:var(--accent)}
+  .tag{font-size:10.5px; color:#fff; background:#a8a49a; border-radius:4px; padding:0 5px; margin-left:auto}
+  footer{
+    flex:0 0 auto; padding:7px 18px; border-top:1px solid var(--line); background:var(--panel);
+    font-size:11.5px; color:var(--txt2); display:flex; gap:16px; align-items:center;
+  }
+  .ok{color:#2f7d4f}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>图章生成器 · Web</h1>
+  <span class="sub">Canvas 2D 矢量渲染 · 与桌面版共用同一套参数模型</span>
+  <span class="grow"></span>
+  <button id="btnSvg">导出 SVG</button>
+  <button class="primary" id="btnPng">导出 PNG</button>
+  <button id="btnSave">保存参数</button>
+  <button id="btnLoad">载入参数</button>
+  <button id="btnReset">重置</button>
+</header>
+
+<main>
+  <aside id="panel"></aside>
+  <section id="stage"><canvas id="cv"></canvas></section>
+</main>
+
+<footer>
+  <span id="stat">就绪</span>
+  <span class="grow" style="flex:1"></span>
+  <span>内部单位为 mm，导出时按 DPI 换算为像素</span>
+</footer>
+
+<input type="file" id="fileJson" accept=".json" hidden>
+<input type="file" id="fileImg" accept="image/*" hidden>
+<input type="file" id="fileTex" accept="image/png,image/*" multiple hidden>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. 字体表（默认字体 = 宋体）
+   ============================================================ */
+const FONT_LIST = [
+  ['宋体',      'SimSun, "宋体", "Songti SC", "Noto Serif CJK SC", serif'],
+  ['新宋体',    '"NSimSun", "新宋体", "SimSun", serif'],
+  ['黑体',      'SimHei, "黑体", "Heiti SC", "Noto Sans CJK SC", sans-serif'],
+  ['楷体',      'KaiTi, "楷体", "Kaiti SC", serif'],
+  ['仿宋',      'FangSong, "仿宋", "FangSong_GB2312", serif'],
+  ['微软雅黑',  '"Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif'],
+  ['等线',      '"DengXian", "等线", sans-serif'],
+  ['华文中宋',  '"STZhongsong", "华文中宋", serif'],
+  ['华文行楷',  '"STXingkai", "华文行楷", cursive'],
+  ['华文隶书',  '"STLiti", "华文隶书", serif'],
+  ['隶书',      'LiSu, "隶书", serif'],
+];
+const FONT_CSS = Object.fromEntries(FONT_LIST);
+const DEFAULT_FONT = '宋体';
+
+/* ============================================================
+   1b. 纹理（画笔纹理：只调制墨迹覆盖度，颜色由对象自身决定）
+   内置纹理为程序化生成，两端算法完全一致；外部纹理为 纹理/ 目录下的 PNG
+   ============================================================ */
+const TEX_SIZE = 128;
+const TEX_SEED = 20241117;
+const BUILTIN_TEX = [['noise','斑驳'], ['fine','细颗粒'], ['stripe','斜纹'], ['dot','网点']];
+const TEX_IMAGES = {};          // id -> {el, w, h, file?}
+
+function makeTexCanvas(id){
+  const n = TEX_SIZE;
+  const c = document.createElement('canvas');
+  c.width = c.height = n;
+  const g = c.getContext('2d');
+  const im = g.createImageData(n, n);
+  const d = im.data;
+  let s = TEX_SEED;
+  for(let y = 0; y < n; y++){
+    for(let x = 0; x < n; x++){
+      const i = (y * n + x) * 4;
+      let a = 255;
+      if(id === 'noise' || id === 'fine'){
+        s = (Math.imul(s, 1103515245) + 12345) >>> 0;
+        const v = ((s >>> 16) & 0xFF) / 255;
+        const t = id === 'noise' ? v * v * v : v * v * v * v * v;
+        a = Math.round(255 - t * (id === 'noise' ? 220 : 180));
+      }else if(id === 'stripe'){
+        a = ((x + y) % 14) < 10 ? 255 : 60;
+      }else if(id === 'dot'){
+        const dx = (x % 9) - 4, dy = (y % 9) - 4;
+        a = (dx * dx + dy * dy) <= 6 ? 255 : 120;
+      }
+      d[i] = 255; d[i+1] = 255; d[i+2] = 255; d[i+3] = a;
+    }
+  }
+  g.putImageData(im, 0, 0);
+  return c;
+}
+
+function getTexture(id){
+  if(!id) return null;
+  if(TEX_IMAGES[id]) return TEX_IMAGES[id];
+  if(BUILTIN_TEX.some(([k]) => k === id)){
+    TEX_IMAGES[id] = { el: makeTexCanvas(id), w: TEX_SIZE, h: TEX_SIZE };
+    return TEX_IMAGES[id];
+  }
+  return null;
+}
+
+function texOptions(){
+  const list = [['', '（无）']].concat(BUILTIN_TEX);
+  Object.keys(TEX_IMAGES).filter(k => TEX_IMAGES[k].file)
+        .forEach(k => list.push([k, k]));
+  return list;
+}
+
+let SCRATCH = null;
+let PAT_CACHE = {};          // 纹理重复图案缓存：key = 纹理id|缩放
+
+function texPattern(sg, tex, id, k){
+  const key = id + '|' + k;
+  let pat = PAT_CACHE[key];
+  if(!pat){
+    pat = sg.createPattern(tex.el, 'repeat');
+    if(pat && pat.setTransform) pat.setTransform(new DOMMatrix([k, 0, 0, k, 0, 0]));
+    PAT_CACHE[key] = pat;
+  }
+  return pat;
+}
+
+function paintObj(g, obj, fn){
+  const tex = getTexture(obj.texture);
+  if(!tex){ fn(g); return; }
+  const W = g.canvas.width, H = g.canvas.height;
+  if(!SCRATCH || SCRATCH.width !== W || SCRATCH.height !== H){
+    SCRATCH = document.createElement('canvas');
+    SCRATCH.width = W; SCRATCH.height = H;
+    PAT_CACHE = {};                     // 画布重建后旧的重复图案作废
+  }
+  const sg = SCRATCH.getContext('2d');
+  sg.setTransform(1, 0, 0, 1, 0, 0);
+  sg.clearRect(0, 0, W, H);
+  sg.setTransform(g.getTransform());
+  fn(sg);
+
+  const pat = texPattern(sg, tex, obj.texture, (+obj.textureScale || 8) / tex.w);
+  const box = designBox();
+  sg.globalCompositeOperation = 'destination-in';
+  sg.globalAlpha = (obj.textureOpacity === undefined ? 1 : +obj.textureOpacity);
+  sg.fillStyle = pat;
+  sg.fillRect(0, 0, box.w, box.h);
+  sg.globalAlpha = 1;
+  sg.globalCompositeOperation = 'source-over';
+
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(SCRATCH, 0, 0);
+  g.restore();
+}
+
+/* ============================================================
+   2. 参数模型 —— 与 Python 版逐字段一致（JSON 可直接互换）
+   ============================================================ */
+const GOLD = Math.sin(Math.PI/10) / Math.sin(3*Math.PI/10); // 0.38197…
+
+function defaultText(i){
+  const base = {
+    visible:false, content:'', font:DEFAULT_FONT, fontCustom:'',
+    bold:false, size:6.5, stretch:1, spacing:0.6,
+    mode:'ring', radius:15.5, startAngle:0, stepAngle:25, autoStep:false,
+    arcSpan:0, inward:false, dx:0, dy:0, color:'#d0021b',
+    texture:'', textureScale:8, textureOpacity:1
+  };
+  if(i===0) Object.assign(base, {
+    visible:true, content:'示例网络科技有限公司',
+    size:5.6, radius:15.2, startAngle:-103.5, stepAngle:23, spacing:0
+  });
+  if(i===1) Object.assign(base, {
+    visible:true, content:'编号 0000001', mode:'flat',
+    size:3.4, dy:15, spacing:0.15
+  });
+  if(i===2) Object.assign(base, {
+    visible:false, content:'', mode:'flat', size:4, dy:-13
+  });
+  return base;
+}
+
+function defaultParams(){
+  return {
+    design:{ margin:8, linkScale:true },
+    frame:{ visible:true, shape:'circle', w:40, h:40, stroke:1.2, color:'#d0021b',
+            texture:'', textureScale:8, textureOpacity:1 },
+    inner:{ visible:false, w:34, h:34, stroke:0.5, color:'#d0021b',
+            texture:'', textureScale:8, textureOpacity:1 },
+    axis:{ visible:false, w:26, h:0.8, stroke:0.8, dx:0, dy:9, color:'#d0021b',
+           texture:'', textureScale:8, textureOpacity:1 },
+    symbol:{ visible:true, kind:'star5', radius:6.4, ratio:GOLD, dx:0, dy:0,
+             color:'#d0021b', img:null, texture:'', textureScale:8, textureOpacity:1 },
+    texts:[ defaultText(0), defaultText(1), defaultText(2) ],
+    out:{ dpi:300 }
+  };
+}
+
+let P = defaultParams();
+let TRANSPARENT = true;
+
+/* ============================================================
+   3. 通用工具
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const RAD = d => d * Math.PI / 180;
+
+function designBox(){
+  // 画布尺寸只由「外框」决定（原程序说明：图形的最终输出大小按外线设置）。
+  // 以前把内框也算进 max()：内框比外框大、或内框线宽设成 0，画布都会被撑大但没有内容。
+  // 圆章只有一个尺寸——宽度即直径，高度不参与（否则改高度会把圆压小，与"宽度/直径"的语义冲突）。
+  // 留白 0 是合法值，不能用 `|| 8` 兜底——那会把 0 当成"没设置"退回 8mm
+  const mv = +P.design.margin;
+  const m = Number.isFinite(mv) ? mv : 8;
+  const fw = +P.frame.w || 0;
+  const fh = P.frame.shape === 'circle' ? fw : (+P.frame.h || 0);
+  const w = Math.max(fw, 1) + m*2;
+  const h = Math.max(fh, 1) + m*2;
+  return { w, h, cx:w/2, cy:h/2, m };
+}
+
+function fontOf(t){
+  const custom = (t.fontCustom || '').trim();
+  const fam = custom ? `"${custom}", ` + (FONT_CSS[t.font] || 'serif') : (FONT_CSS[t.font] || 'serif');
+  return `${t.bold ? 700 : 400} ${t.size}px ${fam}`;
+}
+
+function starVertices(cx, cy, R, ratio, n){
+  const r = R * (ratio > 0 ? ratio : GOLD), out = [];
+  for(let k = 0; k < n*2; k++){
+    const rad = (k % 2 === 0) ? R : r;
+    const a = RAD(-90 + k * 180 / n);
+    out.push([cx + rad*Math.cos(a), cy + rad*Math.sin(a)]);
+  }
+  return out;
+}
+
+function framePath(g, shape, w, h, cx, cy){
+  g.beginPath();
+  if(shape === 'circle'){
+    // 圆章：宽度即直径，高度不参与（与 designBox 的取法一致）
+    g.arc(cx, cy, w/2, 0, Math.PI*2);
+  }else if(shape === 'ellipse'){
+    g.ellipse(cx, cy, w/2, h/2, 0, 0, Math.PI*2);
+  }else if(shape === 'rect'){
+    g.rect(cx - w/2, cy - h/2, w, h);
+  }else if(shape === 'diamond'){
+    g.moveTo(cx, cy - h/2); g.lineTo(cx + w/2, cy);
+    g.lineTo(cx, cy + h/2); g.lineTo(cx - w/2, cy); g.closePath();
+  }else if(shape === 'triangle'){
+    for(let k = 0; k < 3; k++){
+      const a = RAD(-90 + k*120);
+      const x = cx + (w/2)*Math.cos(a), y = cy + (h/2)*Math.sin(a);
+      k ? g.lineTo(x,y) : g.moveTo(x,y);
+    }
+    g.closePath();
+  }
+}
+
+/* ============================================================
+   4. 渲染（坐标单位 = mm，由外层 transform 映射到像素）
+   ============================================================ */
+function render(g){
+  const box = designBox(), cx = box.cx, cy = box.cy;
+  g.clearRect(-1, -1, box.w + 2, box.h + 2);
+
+  // 外框
+  if(P.frame.visible && +P.frame.stroke > 0){
+    paintObj(g, P.frame, gg => {
+      gg.strokeStyle = P.frame.color;
+      gg.lineWidth = +P.frame.stroke;
+      gg.lineJoin = 'round';
+      framePath(gg, P.frame.shape, +P.frame.w, +P.frame.h, cx, cy);
+      gg.stroke();
+    });
+  }
+
+  // 内框（同形状，等比缩小）
+  if(P.inner.visible && +P.inner.stroke > 0){
+    paintObj(g, P.inner, gg => {
+      gg.strokeStyle = P.inner.color;
+      gg.lineWidth = +P.inner.stroke;
+      framePath(gg, P.frame.shape, +P.inner.w, +P.inner.h, cx, cy);
+      gg.stroke();
+    });
+  }
+
+  // 中心线 / 中心框
+  if(P.axis.visible && +P.axis.stroke > 0){
+    paintObj(g, P.axis, gg => {
+      const ax = cx + (+P.axis.dx || 0), ay = cy + (+P.axis.dy || 0);
+      const aw = +P.axis.w || 0, ah = +P.axis.h || 0;
+      gg.strokeStyle = P.axis.color;
+      gg.lineWidth = +P.axis.stroke;
+      if(ah <= +P.axis.stroke){
+        gg.beginPath(); gg.moveTo(ax - aw/2, ay); gg.lineTo(ax + aw/2, ay); gg.stroke();
+      }else{
+        gg.strokeRect(ax - aw/2, ay - ah/2, aw, ah);
+      }
+    });
+  }
+
+  // 图符
+  if(P.symbol.visible){
+    paintObj(g, P.symbol, gg => {
+      const sx = cx + (+P.symbol.dx || 0), sy = cy + (+P.symbol.dy || 0);
+      if(P.symbol.kind === 'image' && P.symbol.img && IMG.ready){
+        const d = (+P.symbol.radius || 5) * 2;
+        gg.drawImage(IMG.el, sx - d/2, sy - d/2, d, d);
+      }else{
+        const pts = starVertices(sx, sy, +P.symbol.radius || 5, +P.symbol.ratio, 5);
+        gg.beginPath();
+        pts.forEach(([x,y], i) => i ? gg.lineTo(x,y) : gg.moveTo(x,y));
+        gg.closePath();
+        gg.fillStyle = P.symbol.color;
+        gg.fill();
+      }
+    });
+  }
+
+  // 文本（1/2/3 各自独立字体与样式）
+  P.texts.forEach(t => {
+    if(t.visible) paintObj(g, t, gg => renderText(gg, t));
+  });
+}
+
+function renderText(g, t){
+  if(!t.visible) return;
+  const s = String(t.content || '');
+  if(!s.trim()) return;
+  const chars = [...s];
+  const box = designBox(), cx = box.cx, cy = box.cy;
+  g.save();
+  g.fillStyle = t.color;
+  g.font = fontOf(t);
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+
+  if(t.mode === 'ring'){
+    const n = chars.length;
+    const step = t.autoStep ? 360/Math.max(n,1) : (+t.stepAngle || 0);
+    chars.forEach((ch, i) => {
+      const deg = (+t.startAngle || 0) + i*step;
+      const rad = RAD(deg);
+      const x = cx + (+t.dx||0) + (+t.radius||0) * Math.sin(rad);
+      const y = cy + (+t.dy||0) - (+t.radius||0) * Math.cos(rad);
+      g.save();
+      g.translate(x, y);
+      g.rotate(rad + (t.inward ? Math.PI : 0));
+      if(+t.stretch !== 1) g.scale(+t.stretch, 1);
+      g.fillText(ch, 0, 0);
+      g.restore();
+    });
+  }else if(t.mode === 'arc'){
+    // 弧排：以「起始角度」为弧的中心，沿半径 R 的圆弧铺开。
+    // 字符顺序按屏幕左右自动判定方向，所以底部文字不用手动把字序反过来。
+    // 勾选「字头朝内」后，字符整体转 180°，字顶朝向圆心 —— 底部文字的正确读法。
+    const n = chars.length;
+    const R = Math.max(0.1, +t.radius || 0);
+    const sp = +t.spacing || 0;
+    const st = +t.stretch || 1;
+    const wid = chars.map(ch => g.measureText(ch).width * st);
+    const totalW = wid.reduce((a,b) => a + b, 0) + sp * Math.max(0, n - 1);
+    const span = +t.arcSpan || 0;
+    // span>0 时把整串字压/拉到正好占满 span 度，否则按字宽自然排
+    const target = span > 0 ? RAD(span) * R : totalW;
+    const k = totalW > 0 ? target / totalW : 1;
+    const a0 = +t.startAngle || 0;
+    const dir = (Math.cos(RAD(a0)) + Math.sin(RAD(a0))) >= 0 ? 1 : -1;
+    let acc = -target / 2;
+    chars.forEach((ch, i) => {
+      const w = wid[i] * k;
+      const s = acc + w / 2;
+      acc += w + sp * k;
+      const deg = a0 + dir * (s / R) * 180 / Math.PI;
+      const rad = RAD(deg);
+      const x = cx + (+t.dx||0) + R * Math.sin(rad);
+      const y = cy + (+t.dy||0) - R * Math.cos(rad);
+      g.save();
+      g.translate(x, y);
+      g.rotate(rad + (t.inward ? Math.PI : 0));
+      // k<1 表示弧长不足需压缩：间距已按 k 排，字形也一起压，否则会叠字；
+      // k>1 只拉开间距，字形保持原宽
+      const ds = st * (k < 1 ? k : 1);
+      if(ds !== 1) g.scale(ds, 1);
+      g.fillText(ch, 0, 0);
+      g.restore();
+    });
+  }else{
+    const sp = +t.spacing || 0, st = +t.stretch || 1;
+    const adv = chars.map(ch => g.measureText(ch).width * st + sp);
+    const total = adv.reduce((a,b) => a+b, 0) - (chars.length ? sp : 0);
+    let x = cx + (+t.dx||0) - total/2;
+    const y = cy + (+t.dy||0);
+    chars.forEach((ch, i) => {
+      const w = adv[i] - sp;
+      g.save();
+      g.translate(x + w/2, y);
+      if(st !== 1) g.scale(st, 1);
+      g.fillText(ch, 0, 0);
+      g.restore();
+      x += adv[i];
+    });
+  }
+  g.restore();
+}
+
+/* ============================================================
+   5. 画布尺寸 / 预览
+   ============================================================ */
+let viewScale = 5;
+/* 画布（白纸）当前对应的设计尺寸。用于判断某次调参是否改变了画布大小：
+   直径/高度/留白一变，画布必须跟着重排，否则内容只会在旧画布上左右漂。 */
+let boxKey = '';
+function fit(){
+  const box = designBox();
+  const stage = $('#stage');
+  const pad = 48;
+  // 再留 1px 余量：避免 canvas 取整后刚好等于内容宽、触发滚动条 → 尺寸来回抖
+  const maxW = Math.max(120, stage.clientWidth - pad - 1);
+  const maxH = Math.max(120, stage.clientHeight - pad - 1);
+  viewScale = Math.min(maxW/box.w, maxH/box.h);
+  boxKey = box.w.toFixed(2) + '×' + box.h.toFixed(2);
+  const dpr = window.devicePixelRatio || 1;
+  cv.width  = Math.round(box.w * viewScale * dpr);
+  cv.height = Math.round(box.h * viewScale * dpr);
+  cv.style.width  = Math.round(box.w * viewScale) + 'px';
+  cv.style.height = Math.round(box.h * viewScale) + 'px';
+  ctx.setTransform(viewScale*dpr, 0, 0, viewScale*dpr, 0, 0);
+  render(ctx);
+  updateStat();
+}
+
+function updateStat(){
+  const box = designBox();
+  const dpi = +P.out.dpi || 300;
+  const px = Math.round(box.w / 25.4 * dpi);
+  const py = Math.round(box.h / 25.4 * dpi);
+  $('#stat').innerHTML = `画布 ${box.w.toFixed(1)} × ${box.h.toFixed(1)} mm　·　导出 ${px} × ${py} px @ ${dpi} DPI`;
+}
+
+/* ============================================================
+   6. 控件生成（schema 驱动，保证 3 组文本结构一致）
+   ============================================================ */
+const SHAPES = [['circle','圆章'],['ellipse','椭圆章'],['rect','方章'],
+                ['diamond','菱形章'],['triangle','三角章']];
+const PRESET_COLORS = ['#d0021b','#c62828','#b71c1c','#1b3a8f','#1f5c3a','#2b2b2b'];
+
+function sec(title, items, open){
+  const d = document.createElement('details');
+  if(open) d.open = true;
+  const sm = document.createElement('summary');
+  sm.textContent = title;
+  d.appendChild(sm);
+  const body = document.createElement('div');
+  body.className = 'body';
+  items.forEach(it => body.appendChild(it));
+  d.appendChild(body);
+  return d;
+}
+
+function getP(path){ return path.split('.').reduce((o,k)=>o[k], P); }
+function setP(path, v){
+  const ks = path.split('.'), last = ks.pop();
+  ks.reduce((o,k)=>o[k], P)[last] = v;
+}
+/* 预留钩子：个别字段变更后若需重建面板，在这里扩展。
+   目前只做一件事：圆章只有一个尺寸，把「高度」对齐到直径，两个控件显示同一个值。 */
+function maybeRebuild(){
+  if(P.frame.shape === 'circle'){
+    if(+P.frame.h !== +P.frame.w) P.frame.h = +P.frame.w;
+    syncRange('frame.w');
+    syncRange('frame.h');
+  }
+}
+
+/* 等比缩放「内容」：位置、尺寸、线宽都乘同一个系数，缩小时线宽同比变细，
+   视觉比例保持不变（否则小章上的圆环会显得像甜甜圈）。
+   不缩放的三类：外框宽高（它是缩放的驱动）、留白（纸边距）、DPI。 */
+function scaleContent(k){
+  const mul = (o, keys) => keys.forEach(key => {
+    // 保留 6 位：既避免 JSON 里出现 20.400000000000002 这种尾巴，也不影响来回缩放的可逆性
+    if(o[key] !== undefined && o[key] !== null) o[key] = Math.round((+o[key]) * k * 1e6) / 1e6;
+  });
+  mul(P.frame,  ['stroke', 'textureScale']);
+  mul(P.inner,  ['w', 'h', 'stroke', 'textureScale']);
+  mul(P.axis,   ['w', 'h', 'stroke', 'dx', 'dy', 'textureScale']);
+  mul(P.symbol, ['radius', 'dx', 'dy', 'textureScale']);
+  P.texts.forEach(t => mul(t, ['size', 'radius', 'spacing', 'dx', 'dy', 'textureScale']));
+}
+
+/* 改外框尺寸的统一入口：
+   · 圆章没有独立高度——拖「高度」等于拖直径，两个控件始终同步
+   · 勾了「等比缩放」就把内容按同一比例缩放，比例由「新尺寸/旧尺寸」得出，
+     连续拖动是逐次相乘，最终比例正好等于首尾之比（不会累积漂移） */
+function setFrameSize(axis, v){
+  const circle = P.frame.shape === 'circle';
+  const useW = axis === 'w' || circle;
+  const old = +((useW ? P.frame.w : P.frame.h)) || 0;
+  const k = old > 0 ? v / old : 1;
+  if(useW){ P.frame.w = v; if(circle) P.frame.h = v; }
+  else P.frame.h = v;
+  if(P.design.linkScale !== false && Math.abs(k - 1) > 1e-9){
+    scaleContent(k);
+    refreshCtlValues();          // 一并改了内框/线宽/字号…，控件显示要跟上
+  }
+  if(circle){ syncRange('frame.w'); syncRange('frame.h'); }
+}
+
+function row(labelText, node, unit){
+  const r = document.createElement('div');
+  r.className = 'row';
+  const l = document.createElement('label');
+  l.textContent = labelText;
+  r.appendChild(l);
+  const c = document.createElement('div');
+  c.className = 'ctl';
+  c.appendChild(node);
+  if(unit){
+    const u = document.createElement('span');
+    u.className = 'unit'; u.textContent = unit;
+    c.appendChild(u);
+  }
+  r.appendChild(c);
+  return r;
+}
+
+/* 滑块类控件的左侧标签（按路径索引，避免每个调用点重复传参） */
+const RANGE_LABEL = (() => {
+  const m = {
+    'out.dpi':'导出 DPI', 'design.margin':'画布留白',
+    'frame.w':'宽度/直径', 'frame.h':'高度', 'frame.stroke':'线宽',
+    'inner.w':'宽度', 'inner.h':'高度', 'inner.stroke':'线宽',
+    'axis.w':'宽度', 'axis.h':'高度', 'axis.stroke':'线宽',
+    'symbol.radius':'半径', 'symbol.ratio':'内径比',
+  };
+  ['frame','inner','axis','symbol'].forEach(k => {
+    m[k+'.textureScale'] = '纹理缩放';
+    m[k+'.textureOpacity'] = '纹理浓淡';
+  });
+  for(let i = 0; i < 3; i++){
+    const p = `texts.${i}.`;
+    m[p+'size'] = '字号';
+    m[p+'stretch'] = '横向缩放';
+    m[p+'radius'] = '半径（环排/弧排）';
+    m[p+'spacing'] = '字距（平排/弧排）';
+    m[p+'textureScale'] = '纹理缩放';
+    m[p+'textureOpacity'] = '纹理浓淡';
+  }
+  return m;
+})();
+
+/* 滑块控件登记表：外框尺寸一变，另一个维度的控件也要跟着刷新显示 */
+const RANGE_CTL = {};
+const NUM_CTL = {};
+const CHECK_CTL = {};   // 复选框：预设/外部改动后要回写勾选状态
+const SEG_CTL = {};     // 分段按钮：同上
+
+function ctlRange(path, min, max, step, unit){
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;align-items:center;gap:7px;width:100%';
+  const rng = document.createElement('input');
+  rng.type = 'range'; rng.min = min; rng.max = max; rng.step = step;
+  const num = document.createElement('input');
+  num.type = 'number'; num.min = min; num.max = max; num.step = step;
+  const show = v => {
+    rng.value = v;
+    num.value = (+v).toFixed(step < 1 ? 1 : 0);
+  };
+  const sync = src => {
+    const v = Math.max(min, Math.min(max, +src.value || 0));
+    show(v);
+    // 外框宽/高的改写要走 setFrameSize：它负责「等比缩放内容 + 圆章宽高同步」
+    if(path === 'frame.w' || path === 'frame.h') setFrameSize(path === 'frame.w' ? 'w' : 'h', v);
+    else setP(path, v);
+    paint();
+  };
+  show(+getP(path) || 0);
+  rng.oninput = () => sync(rng);
+  num.oninput = () => sync(num);
+  wrap.appendChild(rng); wrap.appendChild(num);
+  RANGE_CTL[path] = {rng, num, show};
+  return row(RANGE_LABEL[path] || '', wrap, unit);
+}
+
+/* 把某个滑块控件的显示值同步成 P 里的当前值（不触发 input） */
+function syncRange(path){
+  const c = RANGE_CTL[path];
+  if(c) c.show(+getP(path) || 0);
+}
+
+/* 缩放/预设会把一堆参数一起改掉，控件显示必须跟着刷新，
+   否则拖完外框，内框/线宽/字号这些框里还写着旧数字 */
+function refreshCtlValues(){
+  Object.keys(RANGE_CTL).forEach(p => syncRange(p));
+  Object.keys(NUM_CTL).forEach(p => {
+    const c = NUM_CTL[p];
+    c.n.value = c.fmt(+getP(p) || 0);
+  });
+  Object.keys(CHECK_CTL).forEach(p => { CHECK_CTL[p].checked = !!getP(p); });
+  Object.keys(SEG_CTL).forEach(p => SEG_CTL[p]());
+}
+
+function ctlNum(path, min, max, step, unit, label){
+  const n = document.createElement('input');
+  n.type = 'number'; n.min = min; n.max = max; n.step = step;
+  const fmt = v => (+v).toFixed(step < 1 ? 1 : 0);
+  n.value = fmt(+getP(path) || 0);
+  n.oninput = () => { setP(path, +n.value || 0); paint(); };
+  NUM_CTL[path] = {n, fmt};
+  return row(label, n, unit);
+}
+
+function ctlSel(path, opts, label){
+  const s = document.createElement('select');
+  opts.forEach(([v,t]) => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = t;
+    if(v === getP(path)) o.selected = true;
+    s.appendChild(o);
+  });
+  s.onchange = () => { setP(path, s.value); paint(); maybeRebuild(); };
+  return row(label, s);
+}
+
+function ctlText(path, label, placeholder){
+  const i = document.createElement('input');
+  i.type = 'text'; i.value = getP(path) || '';
+  i.placeholder = placeholder || '';
+  i.oninput = () => { setP(path, i.value); paint(); };
+  return row(label, i);
+}
+
+function ctlTex(path, label){
+  const sel = document.createElement('select');
+  const cur = getP(path) || '';
+  const opts = texOptions();
+  if(cur && !opts.some(([v]) => v === cur)) opts.push([cur, cur + '（未载入）']);
+  opts.forEach(([v, t]) => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = t;
+    if(v === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.onchange = () => { setP(path, sel.value); paint(); };
+  return row(label, sel);
+}
+
+function ctlColor(path, label){
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;align-items:center;gap:6px;width:100%';
+  const c = document.createElement('input');
+  c.type = 'color'; c.value = getP(path);
+  c.oninput = () => { setP(path, c.value); paint(); };
+  wrap.appendChild(c);
+  const sw = document.createElement('div');
+  sw.className = 'swatches';
+  PRESET_COLORS.forEach(col => {
+    const b = document.createElement('div');
+    b.className = 'sw'; b.style.background = col; b.title = col;
+    b.onclick = () => { c.value = col; setP(path, col); paint(); };
+    sw.appendChild(b);
+  });
+  wrap.appendChild(sw);
+  return row(label, wrap);
+}
+
+function ctlCheck(path, label){
+  const w = document.createElement('label');
+  w.className = 'chk';
+  const c = document.createElement('input');
+  c.type = 'checkbox'; c.checked = !!getP(path);
+  c.onchange = () => { setP(path, c.checked); paint(); maybeRebuild(); };
+  w.appendChild(c);
+  CHECK_CTL[path] = c;
+  const r = document.createElement('div');
+  r.className = 'row';
+  const l = document.createElement('label');
+  l.textContent = label;
+  r.appendChild(l);
+  const cc = document.createElement('div');
+  cc.className = 'ctl'; cc.appendChild(w);
+  r.appendChild(cc);
+  return r;
+}
+
+function ctlSeg(path, opts, label){
+  const seg = document.createElement('div');
+  seg.className = 'seg';
+  seg.dataset.path = path;
+  const paintSeg = () => {
+    [...seg.children].forEach(b => b.classList.toggle('on', b.dataset.v === String(getP(path))));
+  };
+  opts.forEach(([v,t]) => {
+    const b = document.createElement('button');
+    b.textContent = t; b.dataset.v = v;
+    b.onclick = () => { setP(path, v); paintSeg(); paint(); };
+    seg.appendChild(b);
+  });
+  paintSeg();
+  SEG_CTL[path] = paintSeg;
+  return row(label, seg);
+}
+
+/* 绕中心排布的一键预设：只改「怎么排」，不改字号/字体/半径 */
+const ARC_PRESETS = {
+  top:    { mode:'arc', startAngle:0,   inward:false },
+  bottom: { mode:'arc', startAngle:180, inward:true  },
+  left:   { mode:'arc', startAngle:270, inward:false },
+  right:  { mode:'arc', startAngle:90,  inward:false }
+};
+
+function applyPreset(i, key){
+  const pr = ARC_PRESETS[key];
+  if(!pr) return;
+  const t = P.texts[i];
+  Object.assign(t, pr);
+  t.visible = true;
+  // 弧排的位置由「半径 + 角度」决定，必须清掉平排留下的偏移，否则会叠加跑出画布
+  t.dx = 0;
+  t.dy = 0;
+  // 弧长跨度按字宽自动，避免预设后文字挤成一团
+  t.arcSpan = 0;
+  // 只改了几个字段：就地刷新控件，不重建面板
+  //（重建会让正在展开的「文本 2/3」分组合上，还丢焦点、跳滚动位置）
+  refreshCtlValues();
+  paint();
+}
+
+function rebuildKeepScroll(){
+  const panel = $('#panel');
+  const top = panel ? panel.scrollTop : 0;
+  buildPanel();
+  if(panel) panel.scrollTop = top;
+}
+
+function ctlPreset(i){
+  const w = document.createElement('div');
+  w.className = 'preset';
+  [['顶部','top'], ['底部','bottom'], ['左侧','left'], ['右侧','right']].forEach(([txt, key]) => {
+    const b = document.createElement('button');
+    b.textContent = txt;
+    b.title = key === 'bottom'
+      ? '底部环绕：字顶朝向圆心，正立可读'
+      : '沿圆弧排布，字头朝外';
+    b.onclick = () => applyPreset(i, key);
+    w.appendChild(b);
+  });
+  return row('绕中心排布', w);
+}
+
+function ctlFont(idx){
+  const path = `texts.${idx}.font`;
+  const s = document.createElement('select');
+  FONT_LIST.forEach(([name]) => {
+    const o = document.createElement('option');
+    o.value = name; o.textContent = name;
+    if(name === getP(path)) o.selected = true;
+    s.appendChild(o);
+  });
+  s.onchange = () => { setP(path, s.value); paint(); };
+  return row('字体', s);
+}
+
+/* ============================================================
+   7. 面板装配
+   ============================================================ */
+function textSection(i){
+  const p = `texts.${i}.`;
+  const items = [
+    ctlCheck(p+'visible', `文本 ${i+1}`),
+    ctlText(p+'content', '内容', i===0 ? '顶部弧形文字' : ''),
+    ctlFont(i),
+    ctlText(p+'fontCustom', '自定义字体', '留空则用上面的字体'),
+    ctlCheck(p+'bold', '加粗'),
+    ctlRange(p+'size', 2, 20, 0.1, 'mm'),
+    ctlRange(p+'stretch', 0.4, 2.5, 0.02, '×'),
+    ctlSeg(p+'mode', [['ring','环排'],['arc','弧排·居中'],['flat','平排']], '排列'),
+    ctlPreset(i),
+    ctlRange(p+'radius', 2, 40, 0.1, 'mm'),
+    ctlNum(p+'startAngle', -360, 360, 1, '°', '起始角度 / 弧中心'),
+    ctlNum(p+'arcSpan', 0, 330, 1, '°', '弧长跨度（0=自动）'),
+    ctlCheck(p+'autoStep', '均分整圈（仅环排）'),
+    ctlNum(p+'stepAngle', -90, 90, 0.5, '°', '每字角度（仅环排）'),
+    ctlCheck(p+'inward', '字头朝内（字顶朝圆心）'),
+    ctlRange(p+'spacing', -1, 6, 0.05, 'mm'),
+    ctlNum(p+'dx', -30, 30, 0.1, 'mm', '水平位置'),
+    ctlNum(p+'dy', -30, 30, 0.1, 'mm', '垂直位置'),
+    ctlColor(p+'color', '颜色'),
+    ctlTex(p+'texture', '纹理'),
+    ctlRange(p+'textureScale', 1, 40, 0.5, 'mm'),
+    ctlRange(p+'textureOpacity', 0, 1, 0.05, ''),
+  ];
+  return sec(`文本 ${i+1}`, items, i === 0);
+}
+
+function buildPanel(){
+  const panel = $('#panel');
+  // 重建前先记住哪些分组是展开的：否则「文本 2/3」一重建就自己合上
+  const openState = {};
+  panel.querySelectorAll('details').forEach(d => {
+    const s = d.querySelector('summary');
+    if(s) openState[s.textContent] = d.open;
+  });
+  panel.innerHTML = '';
+  Object.keys(RANGE_CTL).forEach(k => delete RANGE_CTL[k]);   // 控件重建，旧引用作废
+  Object.keys(NUM_CTL).forEach(k => delete NUM_CTL[k]);
+  Object.keys(CHECK_CTL).forEach(k => delete CHECK_CTL[k]);
+  Object.keys(SEG_CTL).forEach(k => delete SEG_CTL[k]);
+
+  panel.appendChild(sec('画布与输出', [
+    (() => {
+      const d = document.createElement('div');
+      d.className = 'hint';
+      d.style.padding = '2px 0 8px';
+      d.textContent = '所有尺寸单位为毫米（mm）。导出像素 = mm ÷ 25.4 × DPI。';
+      return d;
+    })(),
+    ctlRange('out.dpi', 72, 1200, 1, 'DPI'),
+    ctlRange('design.margin', 0, 30, 1, 'mm'),
+    ctlCheck('design.linkScale', '改外框时等比缩放内容'),
+  ], true));
+
+  panel.appendChild(sec('纹理库', [
+    (() => {
+      const d = document.createElement('div');
+      d.className = 'hint';
+      d.style.padding = '2px 0 8px';
+      d.textContent = '外部纹理为 PNG（支持透明），文件名即纹理名。桌面版启动时会自动读取程序目录下的「纹理」文件夹。';
+      return d;
+    })(),
+    row('载入', (() => {
+      const b = document.createElement('button');
+      b.textContent = '选择 PNG…（可多选）';
+      b.onclick = () => {
+        const f = $('#fileTex');
+        f.onchange = () => { if(f.files.length) loadTextureFiles(f.files); f.value = ''; };
+        f.click();
+      };
+      return b;
+    })()),
+  ]));
+
+  panel.appendChild(sec('外框', [
+    ctlCheck('frame.visible', '显示'),
+    ctlSel('frame.shape', SHAPES, '形状'),
+    ctlRange('frame.w', 10, 80, 0.5, 'mm'),
+    ctlRange('frame.h', 10, 80, 0.5, 'mm'),
+    ctlRange('frame.stroke', 0, 6, 0.1, 'mm'),
+    ctlColor('frame.color', '颜色'),
+    ctlTex('frame.texture', '纹理'),
+    ctlRange('frame.textureScale', 1, 40, 0.5, 'mm'),
+    ctlRange('frame.textureOpacity', 0, 1, 0.05, ''),
+  ], true));
+
+  panel.appendChild(sec('内框', [
+    ctlCheck('inner.visible', '显示'),
+    ctlRange('inner.w', 5, 78, 0.5, 'mm'),
+    ctlRange('inner.h', 5, 78, 0.5, 'mm'),
+    ctlRange('inner.stroke', 0, 4, 0.1, 'mm'),
+    ctlColor('inner.color', '颜色'),
+    ctlTex('inner.texture', '纹理'),
+    ctlRange('inner.textureScale', 1, 40, 0.5, 'mm'),
+    ctlRange('inner.textureOpacity', 0, 1, 0.05, ''),
+  ]));
+
+  panel.appendChild(sec('中心线 / 中心框', [
+    ctlCheck('axis.visible', '显示'),
+    ctlRange('axis.w', 0, 70, 0.5, 'mm'),
+    ctlRange('axis.h', 0, 40, 0.1, 'mm'),
+    ctlRange('axis.stroke', 0.1, 4, 0.05, 'mm'),
+    ctlNum('axis.dx', -30, 30, 0.1, 'mm', '水平偏移'),
+    ctlNum('axis.dy', -30, 30, 0.1, 'mm', '垂直偏移'),
+    ctlColor('axis.color', '颜色'),
+    ctlTex('axis.texture', '纹理'),
+    ctlRange('axis.textureScale', 1, 40, 0.5, 'mm'),
+    ctlRange('axis.textureOpacity', 0, 1, 0.05, ''),
+  ]));
+
+  panel.appendChild(sec('图符', [
+    ctlCheck('symbol.visible', '显示'),
+    ctlSeg('symbol.kind', [['star5','五角星'],['image','自定义图片']], '类型'),
+    ctlRange('symbol.radius', 1, 30, 0.1, 'mm'),
+    ctlRange('symbol.ratio', 0.2, 0.9, 0.005, '内径比'),
+    ctlNum('symbol.dx', -30, 30, 0.1, 'mm', '水平偏移'),
+    ctlNum('symbol.dy', -30, 30, 0.1, 'mm', '垂直偏移'),
+    ctlColor('symbol.color', '颜色'),
+    ctlTex('symbol.texture', '纹理'),
+    ctlRange('symbol.textureScale', 1, 40, 0.5, 'mm'),
+    ctlRange('symbol.textureOpacity', 0, 1, 0.05, ''),
+    row('图片', (() => {
+      const b = document.createElement('button');
+      b.textContent = '选择 PNG…';
+      b.onclick = () => {
+        const f = $('#fileImg');
+        f.onchange = () => { if(f.files[0]) loadImage(f.files[0]); f.value = ''; };
+        f.click();
+      };
+      return b;
+    })()),
+  ]));
+
+  panel.appendChild(textSection(0));
+  panel.appendChild(textSection(1));
+  panel.appendChild(textSection(2));
+  // 恢复重建前的展开状态（按分组标题匹配，文本 1/2/3 互不干扰）
+  panel.querySelectorAll('details').forEach(d => {
+    const s = d.querySelector('summary');
+    const key = s ? s.textContent : '';
+    if(key in openState) d.open = openState[key];
+  });
+  maybeRebuild();
+}
+
+/* ============================================================
+   8. 图片图符
+   ============================================================ */
+const IMG = { el:new Image(), ready:false };
+function loadImage(file){
+  const r = new FileReader();
+  r.onload = e => {
+    IMG.el.onload = () => { IMG.ready = true; P.symbol.img = e.target.result; P.symbol.kind='image'; paint(); };
+    IMG.el.src = e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+
+function loadTextureFiles(files){
+  [...files].forEach(file => {
+    const id = file.name.replace(/\.[^.]+$/, '');
+    const r = new FileReader();
+    r.onload = e => {
+      const im = new Image();
+      im.onload = () => {
+        TEX_IMAGES[id] = { el:im, w:im.width, h:im.height, file:true };
+        rebuildKeepScroll();      // 载入纹理后面板要重建，保持滚动位置与展开状态
+        paint();
+      };
+      im.src = e.target.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+/* ============================================================
+   9. 导出
+   ============================================================ */
+let _paintQueued = false;
+
+/* 合并同一帧内的多次重绘：拖滑块时 input 事件可能每毫秒来一次，
+   若每次都全量 render 会明显掉帧。rAF 合并后每帧最多画一次。
+   注意：改了会让画布变大小的参数（直径/高度/留白/内框开关）时不能只重画，
+   画布元素本身也要按新尺寸重排，否则内容会相对固定画布向左/右漂移。 */
+function paint(){
+  if(_paintQueued) return;
+  _paintQueued = true;
+  requestAnimationFrame(() => {
+    _paintQueued = false;
+    const box = designBox();
+    if(box.w.toFixed(2) + '×' + box.h.toFixed(2) !== boxKey){
+      fit();              // 画布尺寸变了：整体重排（fit 内部会 render）
+    }else{
+      render(ctx);
+      updateStat();
+    }
+  });
+}
+
+function paintNow(){
+  render(ctx);
+  updateStat();
+}
+
+function exportPNG(){
+  const box = designBox();
+  const dpi = +P.out.dpi || 300;
+  const s = dpi / 25.4;
+  const c = document.createElement('canvas');
+  c.width = Math.round(box.w * s);
+  c.height = Math.round(box.h * s);
+  const g = c.getContext('2d');
+  g.setTransform(s, 0, 0, s, 0, 0);
+  render(g);
+  c.toBlob(b => download(b, `图章_${dpi}dpi.png`), 'image/png');
+}
+
+function exportSVG(){
+  const box = designBox(), cx = box.cx, cy = box.cy;
+  const f = n => (+n).toFixed(3).replace(/\.?0+$/,'');
+  const out = [];
+  out.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${f(box.w)}mm" height="${f(box.h)}mm" viewBox="0 0 ${f(box.w)} ${f(box.h)}">`);
+  out.push(`<title>图章</title>`);
+
+  const frameEl = (w,h,stroke,color) => {
+    const st = `fill="none" stroke="${color}" stroke-width="${f(stroke)}"`;
+    switch(P.frame.shape){
+      case 'circle': return `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(w/2)}" ${st}/>`;
+      case 'ellipse': return `<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="${f(w/2)}" ry="${f(h/2)}" ${st}/>`;
+      case 'rect': return `<rect x="${f(cx-w/2)}" y="${f(cy-h/2)}" width="${f(w)}" height="${f(h)}" ${st}/>`;
+      case 'diamond': return `<polygon points="${[[cx,cy-h/2],[cx+w/2,cy],[cx,cy+h/2],[cx-w/2,cy]].map(p=>p.map(f).join(',')).join(' ')}" ${st}/>`;
+      case 'triangle': return `<polygon points="${[0,1,2].map(k=>{const a=RAD(-90+k*120);return [f(cx+w/2*Math.cos(a)),f(cy+h/2*Math.sin(a))].join(',')}).join(' ')}" ${st}/>`;
+    }
+    return '';
+  };
+
+  if(P.frame.visible && P.frame.stroke > 0) out.push(frameEl(+P.frame.w, +P.frame.h, P.frame.stroke, P.frame.color));
+  if(P.inner.visible && P.inner.stroke > 0) out.push(frameEl(+P.inner.w, +P.inner.h, P.inner.stroke, P.inner.color));
+
+  if(P.axis.visible && P.axis.stroke > 0){
+    const ax = cx + (+P.axis.dx||0), ay = cy + (+P.axis.dy||0);
+    const aw = +P.axis.w, ah = +P.axis.h;
+    if(ah <= +P.axis.stroke)
+      out.push(`<line x1="${f(ax-aw/2)}" y1="${f(ay)}" x2="${f(ax+aw/2)}" y2="${f(ay)}" stroke="${P.axis.color}" stroke-width="${f(P.axis.stroke)}"/>`);
+    else
+      out.push(`<rect x="${f(ax-aw/2)}" y="${f(ay-ah/2)}" width="${f(aw)}" height="${f(ah)}" fill="none" stroke="${P.axis.color}" stroke-width="${f(P.axis.stroke)}"/>`);
+  }
+
+  if(P.symbol.visible){
+    const sx = cx + (+P.symbol.dx||0), sy = cy + (+P.symbol.dy||0);
+    if(P.symbol.kind === 'image' && P.symbol.img){
+      const d = (+P.symbol.radius||5)*2;
+      out.push(`<image href="${P.symbol.img}" x="${f(sx-d/2)}" y="${f(sy-d/2)}" width="${f(d)}" height="${f(d)}" preserveAspectRatio="none"/>`);
+    }else{
+      const pts = starVertices(sx, sy, +P.symbol.radius||5, +P.symbol.ratio, 5);
+      out.push(`<polygon points="${pts.map(p=>p.map(f).join(',')).join(' ')}" fill="${P.symbol.color}"/>`);
+    }
+  }
+
+  P.texts.forEach(t => {
+    if(!t.visible) return;
+    const s = String(t.content||'');
+    if(!s.trim()) return;
+    const chars = [...s];
+    const fam = (t.fontCustom||'').trim() || (FONT_CSS[t.font]||'serif').split(',')[0];
+    const attr = `font-family='${fam.replace(/'/g,'')}' font-size="${f(t.size)}" font-weight="${t.bold?700:400}" fill="${t.color}"`;
+    if(t.mode === 'ring'){
+      const n = chars.length;
+      const step = t.autoStep ? 360/Math.max(n,1) : (+t.stepAngle||0);
+      chars.forEach((ch,i) => {
+        const deg = (+t.startAngle||0) + i*step;
+        const rad = RAD(deg);
+        const x = cx + (+t.dx||0) + (+t.radius||0)*Math.sin(rad);
+        const y = cy + (+t.dy||0) - (+t.radius||0)*Math.cos(rad);
+        const rot = deg + (t.inward ? 180 : 0);
+        const sc = +t.stretch !== 1 ? ` scale(${f(t.stretch)},1)` : '';
+        out.push(`<text x="0" y="0" transform="translate(${f(x)},${f(y)}) rotate(${f(rot)})${sc}" ${attr} text-anchor="middle" dominant-baseline="central">${esc(ch)}</text>`);
+      });
+    }else if(t.mode === 'arc'){
+      // 与 renderText 的 arc 分支同一套公式；字宽用离屏 canvas 实测，保证与预览一致
+      const n = chars.length;
+      const R = Math.max(0.1, +t.radius || 0);
+      const sp = +t.spacing || 0, st = +t.stretch || 1;
+      const mc = document.createElement('canvas').getContext('2d');
+      mc.font = fontOf(t);
+      const wid = chars.map(ch => mc.measureText(ch).width * st);
+      const totalW = wid.reduce((a,b) => a + b, 0) + sp * Math.max(0, n - 1);
+      const span = +t.arcSpan || 0;
+      const target = span > 0 ? RAD(span) * R : totalW;
+      const k = totalW > 0 ? target / totalW : 1;
+      const a0 = +t.startAngle || 0;
+      const dir = (Math.cos(RAD(a0)) + Math.sin(RAD(a0))) >= 0 ? 1 : -1;
+      let acc = -target / 2;
+      chars.forEach((ch, i) => {
+        const w = wid[i] * k;
+        const sv = acc + w / 2;
+        acc += w + sp * k;
+        const deg = a0 + dir * (sv / R) * 180 / Math.PI;
+        const rad = RAD(deg);
+        const x = cx + (+t.dx||0) + R * Math.sin(rad);
+        const y = cy + (+t.dy||0) - R * Math.cos(rad);
+        const rot = deg + (t.inward ? 180 : 0);
+        const sc = st !== 1 ? ` scale(${f(st)},1)` : '';
+        out.push(`<text x="0" y="0" transform="translate(${f(x)},${f(y)}) rotate(${f(rot)})${sc}" ${attr} text-anchor="middle" dominant-baseline="central">${esc(ch)}</text>`);
+      });
+    }else{
+      // 与 renderText 的 flat 分支同一套字宽：Canvas 实测 + stretch，逐字累加，
+      // 以前按「字号×1.0」估算字宽，导出的 SVG 和预览位置对不上
+      const mc = document.createElement('canvas').getContext('2d');
+      mc.font = fontOf(t);
+      const st = +t.stretch || 1, sp = +t.spacing || 0;
+      const adv = chars.map(ch => mc.measureText(ch).width * st + sp);
+      const total = adv.reduce((a,b) => a + b, 0) - (chars.length ? sp : 0);
+      let x = cx + (+t.dx||0) - total/2;
+      const y = cy + (+t.dy||0);
+      const sc = st !== 1 ? ` scale(${f(st)},1)` : '';
+      chars.forEach((ch, i) => {
+        const w = adv[i] - sp;
+        out.push(`<text x="0" y="0" transform="translate(${f(x+w/2)},${f(y)})${sc}" ${attr} text-anchor="middle" dominant-baseline="central">${esc(ch)}</text>`);
+        x += adv[i];
+      });
+    }
+  });
+
+  out.push(`</svg>`);
+  download(new Blob([out.join('\n')], {type:'image/svg+xml'}), '图章.svg');
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function download(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+
+/* ============================================================
+   10. 参数存取
+   ============================================================ */
+function saveJson(){
+  const blob = new Blob([JSON.stringify(P, null, 2)], {type:'application/json'});
+  download(blob, '图章参数.json');
+}
+
+function loadJson(){
+  const f = $('#fileJson');
+  f.onchange = () => {
+    const file = f.files[0]; f.value = '';
+    if(!file) return;
+    const r = new FileReader();
+    r.onload = e => {
+      try{
+        const obj = JSON.parse(e.target.result);
+        P = Object.assign(defaultParams(), obj);
+        // design 是对象，浅合并会把新增字段（linkScale）整个丢掉 → 单独按默认值补齐
+        P.design = Object.assign({ margin:8, linkScale:true }, obj.design || {});
+        P.texts = (obj.texts || defaultParams().texts).map((t,i) => Object.assign(defaultText(i), t));
+        if(P.symbol.img){ IMG.el.onload = () => { IMG.ready = true; fit(); }; IMG.el.src = P.symbol.img; }
+        buildPanel(); fit();
+      }catch(err){ alert('参数文件解析失败：' + err.message); }
+    };
+    r.readAsText(file);
+  };
+  f.click();
+}
+
+/* ============================================================
+   11. 启动
+   ============================================================ */
+buildPanel();
+window.addEventListener('resize', () => fit());
+$('#btnPng').onclick = exportPNG;
+$('#btnSvg').onclick = exportSVG;
+$('#btnSave').onclick = saveJson;
+$('#btnLoad').onclick = loadJson;
+$('#btnReset').onclick = () => { P = defaultParams(); IMG.ready = false; buildPanel(); fit(); };
+setTimeout(fit, 30);
+</script>
+</body>
+</html>
