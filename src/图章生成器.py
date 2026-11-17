@@ -116,6 +116,22 @@ def app_dir():
     return os.path.dirname(os.path.abspath(__file__))
 
 
+def set_window_icon(root):
+    """设置窗口标题栏与任务栏图标。
+
+    ico 只在打包时用 --add-data 带进包里（运行时会解到 _MEIPASS），
+    源码直跑则读脚本同目录的 app.ico。找不到就静默跳过，不影响使用。
+    """
+    try:
+        base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+        path = os.path.join(base, "app.ico")
+        if os.path.exists(path):
+            root.iconbitmap(path)
+    except Exception:
+        pass
+
+
+
 TEX_DIR = os.path.join(app_dir(), "纹理")
 TEX_SIZE = 128
 TEX_SEED = 20241117
@@ -767,6 +783,7 @@ class App:
 
         ctk.set_appearance_mode("light")
         root.title(APP_TITLE)
+        set_window_icon(root)
         root.geometry("1200x820")
         root.minsize(1000, 660)
         try:

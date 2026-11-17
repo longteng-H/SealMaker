@@ -18,7 +18,7 @@
 
 | | 网页版 | 桌面版 |
 |---|---|---|
-| 文件 | `图章重构/图章生成器.html`（单文件，不联网） | `图章重构/图章生成器.py` |
+| 文件 | `src/图章生成器.html`（单文件，不联网） | `src/图章生成器.py` |
 | 渲染 | Canvas 2D 矢量 | Pillow 位图 + 超采样 |
 | 界面 | 原生 HTML/CSS | customtkinter（圆角扁平、跟随 DPI） |
 | 独有能力 | 导出 SVG | 载入本地纹理文件夹 |
@@ -61,13 +61,13 @@
 不需要装 Python 或运行库，整个文件夹拷到哪都能用。
 
 **方式二：网页版** —— 直接打开 <https://longteng-h.github.io/SealMaker/>，浏览器里就能用，不装任何东西。
-单文件、纯本地运算，参数和图片都不上传服务器。想离线用就双击 `图章重构/图章生成器.html`，是同一份代码。
+单文件、纯本地运算，参数和图片都不上传服务器。想离线用就双击 `src/图章生成器.html`，是同一份代码。
 
 **方式三：源码运行**
 
 ```bash
 pip install pillow customtkinter
-python "图章重构/图章生成器.py"
+python "src/图章生成器.py"
 ```
 
 ## 参数模型
@@ -100,7 +100,7 @@ python "图章重构/图章生成器.py"
 }
 ```
 
-完整契约见 [`图章重构/参数模型约定.md`](图章重构/参数模型约定.md)。
+完整契约见 [`src/参数模型约定.md`](src/参数模型约定.md)。
 
 ## 目录结构
 
@@ -108,7 +108,7 @@ python "图章重构/图章生成器.py"
 图章逆向/                   逆向分析过程（报告 + 证据）
   图章逆向分析报告.md        313 行：壳、DFM 结构、关键算法定位
   证据/                     关键汇编片段、DFM 解析脚本、内置说明原文
-图章重构/                   双端源码
+src/                   双端源码
   图章生成器.html            网页版：单文件，1134 行
   图章生成器.py              桌面版：Pillow 渲染 + customtkinter 界面
   参数模型约定.md            两端唯一的契约文档
@@ -123,8 +123,8 @@ docs/index.html             网页版的发布副本（GitHub Pages 入口，由
 
 ```bash
 python -m PyInstaller --noconfirm --clean --onedir --windowed ^
-  --name "图章生成器" --icon "图章重构\app.ico" ^
-  --collect-all customtkinter --distpath "发布" "图章重构\图章生成器.py"
+  --name "图章生成器" --icon "src\app.ico" ^
+  --collect-all customtkinter --distpath "发布" "src\图章生成器.py"
 ```
 
 两个必须注意的点：`--icon` 要写绝对路径（相对路径会按 spec 目录解析），以及必须 `--collect-all customtkinter`（主题 JSON 是包内数据）。其余坑见 [`打包说明.md`](打包说明.md)。
@@ -160,7 +160,7 @@ python -m PyInstaller --noconfirm --clean --onedir --windowed ^
 
 | 文件 | 内容 |
 |---|---|
-| [`图章重构/参数模型约定.md`](图章重构/参数模型约定.md) | 参数契约、算法约定、同步清单、性能、已知差异 |
+| [`src/参数模型约定.md`](src/参数模型约定.md) | 参数契约、算法约定、同步清单、性能、已知差异 |
 | [`图章逆向/图章逆向分析报告.md`](图章逆向/图章逆向分析报告.md) | 壳的识别、DFM 资源解析、环排角度与五角星内径比的汇编依据 |
 | [`打包说明.md`](打包说明.md) | 打包命令、五个坑、图标与版本信息 |
 

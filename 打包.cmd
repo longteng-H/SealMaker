@@ -4,9 +4,9 @@ setlocal
 cd /d "%~dp0"
 
 set "PY=C:\Users\LV\AppData\Local\Programs\Python\Python312\python.exe"
-set "SRC=图章重构\图章生成器.py"
-set "ICO=%~dp0图章重构\app.ico"
-set "VER=%~dp0图章重构\version_info.txt"
+set "SRC=src\图章生成器.py"
+set "ICO=%~dp0src\app.ico"
+set "VER=%~dp0src\version_info.txt"
 
 if not exist "%PY%" (
   echo [错误] 找不到 Python：%PY%
@@ -17,8 +17,8 @@ if not exist "%PY%" (
 echo ============================================
 echo  0/2  同步网页版到 docs\index.html
 echo ============================================
-rem docs\index.html 是 GitHub Pages 的入口，内容必须与 图章重构\图章生成器.html 完全一致
-copy /Y "图章重构\图章生成器.html" "docs\index.html"
+rem docs\index.html 是 GitHub Pages 的入口，内容必须与 src\图章生成器.html 完全一致
+copy /Y "src\图章生成器.html" "docs\index.html"
 if errorlevel 1 goto fail
 
 echo.
@@ -27,7 +27,8 @@ echo  1/2  目录版（推荐，启动约 1 秒）
 echo ============================================
 "%PY%" -m PyInstaller --noconfirm --clean --onedir --windowed ^
   --name "图章生成器" --icon "%ICO%" --version-file "%VER%" ^
-  --collect-all customtkinter --distpath "发布" --workpath ".build" --specpath ".build" ^
+  --collect-all customtkinter --add-data "%~dp0src\app.ico;." ^
+  --distpath "发布" --workpath ".build" --specpath ".build" ^
   "%SRC%"
 if errorlevel 1 goto fail
 
@@ -37,7 +38,8 @@ echo  2/2  单文件版（一个 exe，启动约 5 秒）
 echo ============================================
 "%PY%" -m PyInstaller --noconfirm --clean --onefile --windowed ^
   --name "图章生成器" --icon "%ICO%" --version-file "%VER%" ^
-  --collect-all customtkinter --distpath "发布\单文件版" --workpath ".build_one" --specpath ".build_one" ^
+  --collect-all customtkinter --add-data "%~dp0src\app.ico;." ^
+  --distpath "发布\单文件版" --workpath ".build_one" --specpath ".build_one" ^
   "%SRC%"
 if errorlevel 1 goto fail
 
