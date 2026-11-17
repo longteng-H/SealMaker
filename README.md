@@ -4,7 +4,7 @@
   <p><b>一套参数模型，两种实现。</b><br>
   单文件网页版（Canvas 2D）· Python 桌面版（Pillow + customtkinter）<br>
   参数 JSON 双向互通，同一份参数在两端渲染结果一致。</p>
-  <p><a href="https://longteng-H.github.io/SealMaker/"><b>▶ 在线试用（浏览器直接打开，无需安装）</b></a></p>
+  <p><a href="https://longteng-h.github.io/SealMaker/"><b>▶ 在线试用（浏览器直接打开，无需安装）</b></a></p>
 </div>
 
 > ⚠️ **仅限合法用途。** 本项目用于自制印章效果图、票据与文档排版、设计稿演示、逆向工程学习。
@@ -51,9 +51,16 @@
 
 ## 快速开始
 
-**方式一：下载 exe** —— 见 [Releases](https://github.com/longteng-H/SealMaker/releases)。目录版启动约 1.8 秒；单文件版 34 MB，启动约 5.5 秒（每次都要解压）。整目录拷走即可用，不需要装 Python。
+**方式一：下载 exe** —— [Releases · v1.0.0](https://github.com/longteng-H/SealMaker/releases/latest)
 
-**方式二：网页版** —— 直接打开 <https://longteng-H.github.io/SealMaker/>，浏览器里就能用，不装任何东西。
+| 文件 | 说明 | 体积 | 启动 |
+|---|---|---|---|
+| `SealMaker_v1.0.0_windows_x64_portable.zip` | 目录版（推荐）：解压后双击 `图章生成器.exe` | 34 MB | ≈1.8 秒 |
+| `SealMaker_v1.0.0_windows_x64_single.exe` | 单文件版：一个 exe 双击即用 | 34 MB | ≈5.5 秒（每次启动要解压） |
+
+不需要装 Python 或运行库，整个文件夹拷到哪都能用。
+
+**方式二：网页版** —— 直接打开 <https://longteng-h.github.io/SealMaker/>，浏览器里就能用，不装任何东西。
 单文件、纯本地运算，参数和图片都不上传服务器。想离线用就双击 `图章重构/图章生成器.html`，是同一份代码。
 
 **方式三：源码运行**
